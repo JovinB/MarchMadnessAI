@@ -1,23 +1,44 @@
 import data_config
 import NN_models
+import numpy as np
 
-# TODO: setup baseline model that only chooses the higher seed to win
+
+def baseline_by_seed(seeds_X, y):
+    num_correct = 0
+
+    for i, seed_pair in enumerate(seeds_X):
+        if not seed_pair[0] == seed_pair[1]: # if seeds are the same, skip
+            if y[i] == 1:
+                if seed_pair[0] < seed_pair[1]:
+                    num_correct += 1
+            elif y[i] == 0:
+                if seed_pair[0] > seed_pair[1]:
+                    num_correct += 1
+    
+    accuracy = num_correct / len(y)
+
+    return accuracy
 
 def test():
     TEAM_DIRECTORY = data_config.establish_team_directory()
 
-    data = data_config.get_data(1985, 2022)
-    print(data)
+    data = data_config.get_data(1990, 2001)
+    #np.random.seed(1)
+    np.random.shuffle(data)
+
     data_X = data[:,:-1]
-    data_Y = data[:,-1]
+    data_y = data[:,-1]
+
+    baseline_acc = baseline_by_seed(data_X, data_y)
     
     num_features = len(data_X[0])
 
     NN_1 = NN_models.simple_MLP(num_features)
 
-    NN_1.fit(data_X, data_Y, epochs=20, batch_size=32) #, validation_split=0.2)
-    test_loss, test_accuracy = NN_1.evaluate(data_X, data_Y)
+    NN_1.fit(data_X, data_y, epochs=20, batch_size=32) #, validation_split=0.2)
+    test_loss, test_accuracy = NN_1.evaluate(data_X, data_y)
     print(f"Test loss: {test_loss:.2f}")
     print(f"Test accuracy: {test_accuracy:.2f}")
+    print(f"Baseline accuracy: {baseline_acc:.2f}")
 
 test()
