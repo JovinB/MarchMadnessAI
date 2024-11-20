@@ -1,6 +1,8 @@
 import data_config
 import NN_models
 
+# TODO: setup baseline model that only chooses the higher seed to win
+
 def test():
     TEAM_DIRECTORY = data_config.establish_team_directory()
 
