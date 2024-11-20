@@ -69,7 +69,6 @@ def get_averaged_reg_season_data(data_tldr):
 
     for i in range(len(averaged_data)):
         total_games = averaged_data[i][0]
-        total_games = 1
         averaged_data[i] = [averaged_data[i][1],averaged_data[i][2]/total_games,averaged_data[i][3]/total_games,
                             averaged_data[i][4]/total_games,averaged_data[i][5]/total_games,averaged_data[i][6]/total_games,
                             averaged_data[i][7]/total_games,averaged_data[i][8]/total_games,averaged_data[i][9]/total_games,
