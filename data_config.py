@@ -13,12 +13,23 @@ def establish_team_directory():
 
     return team_directory
 
-def get_averaged_reg_season_data(data_tldr):
-    # TODO: make work across seasons
-    years = [2021, 2022]
-    data = pd.read_csv("data/MRegularSeasonDetailedResults.csv")
-    data = data.loc[data['Season'].isin(years)]
+def clean_seed(seed):  # removes conference identifiers from the team's seed
+    seed = seed.replace('W','')
+    seed = seed.replace('X','')
+    seed = seed.replace('Y','')
+    seed = seed.replace('Z','')
+    seed = seed.replace('a','')
+    seed = seed.replace('b','')
 
+    return seed
+
+def get_team_data(data, teamID, season):
+    for team in data:
+        if team[0] == teamID and team[1] == season:
+            return team
+    return None
+
+def get_averaged_reg_season_data(data):
     averaged_data = []
     teams = []
 
@@ -70,6 +81,7 @@ def get_averaged_reg_season_data(data_tldr):
 
     for i in range(len(averaged_data)):
         total_games = averaged_data[i][0]
+        total_games = 1  # for testing purposes -- gives totals instead of averages
         averaged_data[i] = [averaged_data[i][1],averaged_data[i][2],averaged_data[i][3]/total_games,
                             averaged_data[i][4]/total_games,averaged_data[i][5]/total_games,averaged_data[i][6]/total_games,
                             averaged_data[i][7]/total_games,averaged_data[i][8]/total_games,averaged_data[i][9]/total_games,
@@ -97,33 +109,21 @@ def get_data(start_year, end_year):
 
     for game in tourney_data_subset.iterrows():
         game = game[1] # iterrows() returns a (index, Series) pair where the 'Series' contains the data
-        game_data = []
 
         w_seed = seed_data_subset.loc[(seed_data_subset['TeamID'] == game['WTeamID']) & (seed_data_subset['Season'] == game['Season'])]['Seed'].values[0]
         l_seed = seed_data_subset.loc[(seed_data_subset['TeamID'] == game['LTeamID']) & (seed_data_subset['Season'] == game['Season'])]['Seed'].values[0]
 
         # we do not want the conference identifier on the seed
-        w_seed = w_seed.replace('W','')
-        l_seed = l_seed.replace('W','')
-        w_seed = w_seed.replace('X','')
-        l_seed = l_seed.replace('X','')
-        w_seed = w_seed.replace('Y','')
-        l_seed = l_seed.replace('Y','')
-        w_seed = w_seed.replace('Z','')
-        l_seed = l_seed.replace('Z','')
-        w_seed = w_seed.replace('a','')
-        l_seed = l_seed.replace('a','')
-        w_seed = w_seed.replace('b','')
-        l_seed = l_seed.replace('b','')
+        w_seed = clean_seed(w_seed)
+        l_seed = clean_seed(l_seed)
+
+        w_team_data = get_team_data(reg_season_data_subset, game['WTeamID'], game['Season'])
+        l_team_data = get_team_data(reg_season_data_subset, game['LTeamID'], game['Season'])
 
         if random.random() < 0.5: # randomly choose to order the data as winner, loser, 1 (label) or loser, winner, 0 (label)
-            game_data.append(int(w_seed))
-            game_data.append(int(l_seed))
-            game_data.append(1)
+            game_data = [int(w_seed)] + w_team_data[2:] + [int(l_seed)] + l_team_data[2:] + [1]
         else:
-            game_data.append(int(l_seed))
-            game_data.append(int(w_seed))
-            game_data.append(0)
+            game_data = [int(l_seed)] + l_team_data[2:] + [int(w_seed)] + w_team_data[2:] + [0]
 
         data.append(game_data)
     
