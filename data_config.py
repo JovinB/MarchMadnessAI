@@ -2,6 +2,37 @@ import pandas as pd
 import random
 import numpy as np
 
+
+def create_team_sequences(data, sequence_length):
+    team_sequences = {}
+    
+    for game in data:
+        winner_team_id = game[0]  # Assuming `game[0]` contains the winner's team ID
+        loser_team_id = game[1]  # Assuming `game[1]` contains the loser's team ID
+        
+        if winner_team_id not in team_sequences:
+            team_sequences[winner_team_id] = []
+        if loser_team_id not in team_sequences:
+            team_sequences[loser_team_id] = []
+        
+        # Add game stats to each team's sequence
+        team_sequences[winner_team_id].append(game[2:])  # Winner stats
+        team_sequences[loser_team_id].append(game[2:])  # Loser stats
+
+    # Convert sequences to NumPy arrays and pad/truncate to uniform length
+    for team in team_sequences:
+        team_sequences[team] = np.array(team_sequences[team])
+        if team_sequences[team].shape[0] < sequence_length:
+            # Pad sequences shorter than sequence_length
+            padding = np.zeros((sequence_length - team_sequences[team].shape[0], team_sequences[team].shape[1]))
+            team_sequences[team] = np.vstack([padding, team_sequences[team]])
+        else:
+            # Truncate sequences longer than sequence_length
+            team_sequences[team] = team_sequences[team][-sequence_length:]
+
+    return np.array(list(team_sequences.values()))  # Combine all team sequences into a single array
+
+
 def establish_team_directory():
     team_directory = {}
 
