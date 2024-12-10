@@ -244,11 +244,15 @@ def get_kenpom_data(start_year, end_year):
 
             # if the team is not seeded, skip its line of data
             if seed_num_length > 0:
+                wins, losses = line[3].split("-")
+                win_loss_ratio = int(wins) / int(losses)
+
                 # only include desired data
                 data_row = []
                 team_name = convert_team_name_format(line[1][:-(1+seed_num_length)])
                 data_row.append(team_name)
                 data_row.append(year)
+                data_row.append(win_loss_ratio) # engineered feature
                 data_row.append(float(line[4]))
                 data_row.append(float(line[5]))
                 data_row.append(float(line[7]))

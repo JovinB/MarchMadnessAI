@@ -60,9 +60,9 @@ def test():
     KP_NN_2 = NN_models.simple_MLP(KP_num_features)
     CB_NN_2 = NN_models.simple_MLP(CB_num_features)
     
-    history = NN_2.fit(train_data_X, train_data_y, epochs=1000, batch_size=32, validation_data=(test_data_X, test_data_y))
-    KP_history = KP_NN_2.fit(KP_train_data_X, KP_train_data_y, epochs=1000, batch_size=32, validation_data=(KP_test_data_X, KP_test_data_y))
-    CB_history = CB_NN_2.fit(CB_train_data_X, CB_train_data_y, epochs=1000, batch_size=32, validation_data=(CB_test_data_X, CB_test_data_y))
+    history = NN_2.fit(train_data_X, train_data_y, epochs=100, batch_size=32, validation_data=(test_data_X, test_data_y))
+    KP_history = KP_NN_2.fit(KP_train_data_X, KP_train_data_y, epochs=100, batch_size=32, validation_data=(KP_test_data_X, KP_test_data_y))
+    CB_history = CB_NN_2.fit(CB_train_data_X, CB_train_data_y, epochs=100, batch_size=32, validation_data=(CB_test_data_X, CB_test_data_y))
     
     accuracies = history.history['val_accuracy']
     KP_accuracies = KP_history.history['val_accuracy']
@@ -76,6 +76,8 @@ def test():
     print(f"Test accuracy: {max(accuracies):.2f}, Test loss: {min(losses):.2f}")
     print(f"KP Test accuracy: {max(KP_accuracies):.2f}, KP Test loss: {min(KP_losses):.2f}")
     print(f"CB Test accuracy: {max(CB_accuracies):.2f}, CB Test loss: {min(CB_losses):.2f}")
+
+    
     
     # print(f"Baseline accuracy: {baseline_acc:.2f}")
 
