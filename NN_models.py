@@ -26,3 +26,4 @@ def simple_MLP(num_features):
                 metrics=['accuracy'])
     
     return model
+
