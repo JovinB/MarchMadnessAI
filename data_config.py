@@ -3,10 +3,125 @@ import random
 import numpy as np
 import csv
 
+
+def convert_team_name_format(team_name):
+    team_name = team_name.replace(".","")
+    match team_name:
+        case "Saint Mary's":
+            return "St Mary's CA"
+        case "Florida Atlantic":
+            return "FL Atlantic"
+        case "Charleston":
+            return "Col Charleston"
+        case "Kent St":
+            return "Kent"
+        case "Kennesaw St":
+            return "Kennesaw"
+        case "Northern Kentucky":
+            return "N Kentucky"
+        case "Eastern Kentucky":
+            return "E Kentucky"
+        case "Southern Illinois":
+            return "S Illinois"
+        case "Illinois Chicago":
+            return "IL Chicago"
+        case "Boston University":
+            return "Boston Univ"
+        case "Milwaukee":
+            return "WI Milwaukee"
+        case "Troy St":
+            return "Troy"
+        case "Central Connecticut":
+            return "Central Conn"
+        case "Saint Joseph's":
+            return "St Joseph's PA"
+        case "Central Michigan":
+            return "C Michigan"
+        case "East Tennessee St":
+            return "ETSU"
+        case "South Carolina St":
+            return "S Carolina St"
+        case "Texas Southern":
+            return "TX Southern"
+        case "Western Michigan":
+            return "W Michigan"
+        case "Louisiana Lafayette":
+            return "Louisiana"
+        case "Eastern Washington":
+            return "E Washington"
+        case "Monmouth":
+            return "Monmouth NJ"
+        case "UTSA":
+            return "UT San Antonio"
+        case "George Washington":
+            return "G Washington"
+        case "Southeastern Louisiana":
+            return "SE Louisiana"
+        case "Fairleigh Dickinson":
+            return "F Dickinson"
+        case "Southern":
+            return "Southern Univ"
+        case "Northwestern St":
+            return "Northwestern LA"
+        case "Western Kentucky":
+            return "WKU"
+        case "Texas A&M Corpus Chris":
+            return "TAM C. Christi"
+        case "Albany":
+            return "SUNY Albany"
+        case "North Dakota St":
+            return "N Dakota St"
+        case "American":
+            return "American Univ"
+        case "Arkansas Pine Bluff":
+            return "Ark Pine Bluff"
+        case "Northern Colorado":
+            return "N Colorado"
+        case "Saint Peter's":
+            return "St Peter's"
+        case "Arkansas Little Rock":
+            return "Ark Little Rock"
+        case "Saint Louis":
+            return "St Louis"
+        case "South Dakota St":
+            return "S Dakota St"
+        case "Mississippi Valley St":
+            return "MS Valley St"
+        case "Middle Tennessee":
+            return "MTSU"
+        case "Florida Gulf Coast":
+            return "FL Gulf Coast"
+        case "North Carolina A&T":
+            return "NC A&T"
+        case "Stephen F Austin":
+            return "SF Austin"
+        case "North Carolina Central":
+            return "NC Central"
+        case "Mount St Mary's":
+            return "Mt St Mary's"
+        case "Coastal Carolina":
+            return "Coastal Car"
+        case "Cal St Bakersfield":
+            return "CS Bakersfield"
+        case "Green Bay":
+            return "WI Green Bay"
+        case "Loyola Chicago":
+            return "Loyola-Chicago"
+        case "College of Charleston":
+            return "Col Charleston"
+        case "Cal St Fullerton":
+            return "CS Fullerton"
+        case "Prairie View A&M":
+            return "Prairie View"
+        case "Abilene Christian":
+            return "Abilene Chr"
+        case _:
+            return team_name
+
 def establish_team_directory():
     team_directory = {}
 
-    # create directory of key/value pairs with TeamID/TeamName
+    # create directory of key/value pairs with TeamName/TeamID
     team_data = pd.read_csv("data/MTeams.csv")
     for row in team_data.iterrows():
         row = row[1] # iterrows() returns a (index, Series) pair where the 'Series' contains the data
@@ -24,10 +139,25 @@ def clean_seed(seed):  # removes conference identifiers from the team's seed
 
     return seed
 
+def count_numbers_in_string(string):
+    numbers_count = 0
+    for char in string:
+        if char.isdigit():
+            numbers_count += 1
+    
+    return numbers_count
+
 def get_team_data(data, teamID, season):
     for team in data:
         if team[0] == teamID and team[1] == season:
-            return team
+            return team[2:]
+    return None
+
+def get_kenpom_team_data(team_directory, data, teamID, season):
+    for row in data:
+        if row[0] == team_directory[teamID] and row[1] == season:
+            return row[2:]
+
     return None
 
 def get_averaged_reg_season_data(data):
@@ -91,7 +221,51 @@ def get_averaged_reg_season_data(data):
 
     return averaged_data
 
-def get_data(start_year, end_year):
+
+def get_kenpom_data(start_year, end_year):
+    years = []
+    year = start_year
+    while not year == end_year + 1:
+        if year == 2020:
+            year += 1
+            continue
+        years.append(year)
+        year += 1
+
+    kenpom_data = []
+
+    for year in years:
+        file = open(f"data/kenpom_{year}.txt", 'r')
+
+        file_reader = csv.reader(file, delimiter="\t")
+                        
+        for line in file_reader:
+            seed_num_length = count_numbers_in_string(line[1])
+
+            # if the team is not seeded, skip its line of data
+            if seed_num_length > 0:
+                # only include desired data
+                data_row = []
+                team_name = convert_team_name_format(line[1][:-(1+seed_num_length)])
+                data_row.append(team_name)
+                data_row.append(year)
+                data_row.append(float(line[4]))
+                data_row.append(float(line[5]))
+                data_row.append(float(line[7]))
+                data_row.append(float(line[9]))
+                data_row.append(float(line[11]))
+                data_row.append(float(line[13]))
+                data_row.append(float(line[15]))
+                data_row.append(float(line[17]))
+                data_row.append(float(line[19]))
+
+                kenpom_data.append(data_row)
+    
+    return kenpom_data
+
+
+def get_data(start_year, end_year, dataset="Regular"): # dataset can also be 'KenPom' or 'Both'
+    TEAM_DIRECTORY = establish_team_directory()
     reg_season_data = pd.read_csv("data/MRegularSeasonDetailedResults.csv")
     seed_data = pd.read_csv("data/MNCAATourneySeeds.csv")
     tourney_result_data = pd.read_csv("data/MNCAATourneyCompactResults.csv")
@@ -102,9 +276,13 @@ def get_data(start_year, end_year):
         years.append(year)
         year += 1
 
-    reg_season_data_subset = get_averaged_reg_season_data(reg_season_data.loc[reg_season_data['Season'].isin(years)])
     seed_data_subset = seed_data.loc[seed_data['Season'].isin(years)]
     tourney_data_subset = tourney_result_data.loc[tourney_result_data['Season'].isin(years)]
+
+    if dataset != "KenPom":
+        reg_season_data_subset = get_averaged_reg_season_data(reg_season_data.loc[reg_season_data['Season'].isin(years)])
+    if dataset == "KenPom" or dataset == "Both":
+        kenpom_data_subset = get_kenpom_data(start_year, end_year)
 
     data = []
 
@@ -118,59 +296,23 @@ def get_data(start_year, end_year):
         w_seed = clean_seed(w_seed)
         l_seed = clean_seed(l_seed)
 
-        w_team_data = get_team_data(reg_season_data_subset, game['WTeamID'], game['Season'])
-        l_team_data = get_team_data(reg_season_data_subset, game['LTeamID'], game['Season'])
+        if dataset == "Regular":
+            w_team_data = get_team_data(reg_season_data_subset, game['WTeamID'], game['Season'])
+            l_team_data = get_team_data(reg_season_data_subset, game['LTeamID'], game['Season'])
+
+        elif dataset == "KenPom":
+            w_team_data = get_kenpom_team_data(TEAM_DIRECTORY, kenpom_data_subset, game['WTeamID'], game['Season'])
+            l_team_data = get_kenpom_team_data(TEAM_DIRECTORY, kenpom_data_subset, game['LTeamID'], game['Season'])
+
+        elif dataset == "Both":
+            w_team_data = get_team_data(reg_season_data_subset, game['WTeamID'], game['Season']) + get_kenpom_team_data(TEAM_DIRECTORY, kenpom_data_subset, game['WTeamID'], game['Season'])
+            l_team_data = get_team_data(reg_season_data_subset, game['LTeamID'], game['Season']) + get_kenpom_team_data(TEAM_DIRECTORY, kenpom_data_subset, game['LTeamID'], game['Season'])
 
         if random.random() < 0.5: # randomly choose to order the data as winner, loser, 1 (label) or loser, winner, 0 (label)
-            game_data = [int(w_seed)] + w_team_data[2:] + [int(l_seed)] + l_team_data[2:] + [1]
+            game_data = [int(w_seed)] + w_team_data + [int(l_seed)] + l_team_data + [1]
         else:
-            game_data = [int(l_seed)] + l_team_data[2:] + [int(w_seed)] + w_team_data[2:] + [0]
+            game_data = [int(l_seed)] + l_team_data + [int(w_seed)] + w_team_data + [0]
 
         data.append(game_data)
     
     return np.array(data)
-
-def get_kenpom_data(start_year, end_year):
-    years = []
-    year = start_year
-    while not year == end_year + 1:
-        years.append(year)
-        year += 1
-
-    file = open("data/kenpom_2023.txt", 'r')
-    data = []
-
-    file_reader = csv.reader(file, delimiter="\t")
-
-    for line in file_reader:
-        seed_num_length = count_numbers_in_string(line[1])
-
-        # if the team is not seeded, skip its line of data
-        if seed_num_length > 0:
-            # only include desired data
-            data_row = []
-            data_row.append(line[1][:-(1+seed_num_length)])
-            data_row.append(float(line[4]))
-            data_row.append(float(line[5]))
-            data_row.append(float(line[7]))
-            data_row.append(float(line[9]))
-            data_row.append(float(line[11]))
-            data_row.append(float(line[13]))
-            data_row.append(float(line[15]))
-            data_row.append(float(line[17]))
-            data_row.append(float(line[19]))
-
-            data.append(data_row)
-
-    return data
-
-def count_numbers_in_string(string):
-    numbers_count = 0
-    for char in string:
-        if char.isdigit():
-            numbers_count += 1
-    
-    return numbers_count
-
-data = get_kenpom_data(2023, 2023)
-print(data)
