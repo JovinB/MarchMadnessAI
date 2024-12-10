@@ -1,6 +1,7 @@
 import data_config
 import NN_models
 import numpy as np
+import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
 def baseline_by_seed(seeds_X, y):
@@ -77,7 +78,18 @@ def test():
     print(f"KP Test accuracy: {max(KP_accuracies):.2f}, KP Test loss: {min(KP_losses):.2f}")
     print(f"CB Test accuracy: {max(CB_accuracies):.2f}, CB Test loss: {min(CB_losses):.2f}")
 
-    
+    # Plot validation accuracy
+    epochs = range(1, len(accuracies) + 1, 10)  # Epoch numbers
+    plt.plot(epochs, accuracies[9::10], 'b-', label='Regular')
+    plt.plot(epochs, KP_accuracies[9::10], 'g-', label='KenPom')
+    plt.plot(epochs, CB_accuracies[9::10], 'r-', label='Both')
+
+    plt.ylim(0, 1)
+    plt.title('Validation Accuracy per Epoch')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.show()
     
     # print(f"Baseline accuracy: {baseline_acc:.2f}")
 
