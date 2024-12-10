@@ -12,66 +12,60 @@ class MyGRUCell(tf.keras.layers.Layer):
     def __init__(self, units, **kwargs):
         super(MyGRUCell, self).__init__(**kwargs)
         self.units = units
+        self.state_size = self.units  # Added this line
+        self.output_size = self.units # Optional, but good practice
 
     def build(self, input_shape):
-        # input_shape: (batch, time, features)
-        input_dim = input_shape[-1] + self.units  # because we concat x_t and h_{t-1}
+        input_dim = input_shape[-1]
         
-        # Weights for update gate z_t
-        self.W_z = self.add_weight(shape=(input_dim, self.units),
-                                   initializer='glorot_uniform',
-                                   name='W_z')
-        self.b_z = self.add_weight(shape=(self.units,),
-                                   initializer='zeros',
-                                   name='b_z')
+        self.Wz = self.add_weight(shape=(input_dim + self.units, self.units),
+                                  initializer='glorot_uniform',
+                                  name='Wz')
+        self.bz = self.add_weight(shape=(self.units,),
+                                  initializer='zeros',
+                                  name='bz')
 
-        # Weights for reset gate r_t
-        self.W_r = self.add_weight(shape=(input_dim, self.units),
-                                   initializer='glorot_uniform',
-                                   name='W_r')
-        self.b_r = self.add_weight(shape=(self.units,),
-                                   initializer='zeros',
-                                   name='b_r')
+        self.Wr = self.add_weight(shape=(input_dim + self.units, self.units),
+                                  initializer='glorot_uniform',
+                                  name='Wr')
+        self.br = self.add_weight(shape=(self.units,),
+                                  initializer='zeros',
+                                  name='br')
 
-        # Weights for candidate hidden state ĥ_t
-        self.W_h = self.add_weight(shape=(input_dim, self.units),
-                                   initializer='glorot_uniform',
-                                   name='W_h')
-        self.b_h = self.add_weight(shape=(self.units,),
-                                   initializer='zeros',
-                                   name='b_h')
+        self.Wh = self.add_weight(shape=(input_dim + self.units, self.units),
+                                  initializer='glorot_uniform',
+                                  name='Wh')
+        self.bh = self.add_weight(shape=(self.units,),
+                                  initializer='zeros',
+                                  name='bh')
 
         self.built = True
 
     def call(self, inputs, states):
-        # inputs: x_t of shape (batch, features)
-        # states: [h_{t-1}] of shape (batch, units)
-        
-        h_prev = states[0]
-        
-        # Concatenate input and previous hidden state
-        concat_x_h = tf.concat([inputs, h_prev], axis=-1)
+        h_prev = states[0]  # previous hidden state
+
+        # Concatenate x_t and h_(t-1)
+        combined = tf.concat([inputs, h_prev], axis=1)
 
         # Update gate
-        z_t = tf.nn.sigmoid(tf.matmul(concat_x_h, self.W_z) + self.b_z)
+        z_t = tf.nn.sigmoid(tf.matmul(combined, self.Wz) + self.bz)
 
         # Reset gate
-        r_t = tf.nn.sigmoid(tf.matmul(concat_x_h, self.W_r) + self.b_r)
-        
-        # Candidate hidden state
-        # For the candidate, we apply reset gate to h_prev before concatenation
-        concat_x_rh = tf.concat([inputs, r_t * h_prev], axis=-1)
-        h_hat_t = tf.nn.tanh(tf.matmul(concat_x_rh, self.W_h) + self.b_h)
+        r_t = tf.nn.sigmoid(tf.matmul(combined, self.Wr) + self.br)
 
-        # Final hidden state
+        # Candidate hidden state
+        combined_reset = tf.concat([inputs, r_t * h_prev], axis=1)
+        h_hat_t = tf.nn.tanh(tf.matmul(combined_reset, self.Wh) + self.bh)
+
+        # New hidden state
         h_t = z_t * h_prev + (1 - z_t) * h_hat_t
 
         return h_t, [h_t]
 
-    def get_initial_state(self, inputs=None, batch_size=None, dtype=None):
-        # Return initial state of zeros
-        return [tf.zeros((batch_size, self.units), dtype=dtype)]
-
+    def get_config(self):
+        config = super(MyGRUCell, self).get_config()
+        config.update({"units": self.units})
+        return config
 
 # -------------------------------------------------------------
 # Using the provided code to get and prepare data
@@ -114,7 +108,7 @@ model.add(Dense(1, activation='sigmoid'))
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
 model.fit(X_train_seq, y_train_seq, 
-          epochs=10,    # Adjust epochs as needed (set to 10 for quick demo)
+          epochs=1000,    # Adjust epochs as needed (set to 10 for quick demo)
           batch_size=32, 
           validation_split=0.1)
 
