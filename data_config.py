@@ -1,6 +1,7 @@
 import pandas as pd
 import random
 import numpy as np
+import csv
 
 def establish_team_directory():
     team_directory = {}
@@ -128,3 +129,48 @@ def get_data(start_year, end_year):
         data.append(game_data)
     
     return np.array(data)
+
+def get_kenpom_data(start_year, end_year):
+    years = []
+    year = start_year
+    while not year == end_year + 1:
+        years.append(year)
+        year += 1
+
+    file = open("data/kenpom_2023.txt", 'r')
+    data = []
+
+    file_reader = csv.reader(file, delimiter="\t")
+
+    for line in file_reader:
+        seed_num_length = count_numbers_in_string(line[1])
+
+        # if the team is not seeded, skip its line of data
+        if seed_num_length > 0:
+            # only include desired data
+            data_row = []
+            data_row.append(line[1][:-(1+seed_num_length)])
+            data_row.append(float(line[4]))
+            data_row.append(float(line[5]))
+            data_row.append(float(line[7]))
+            data_row.append(float(line[9]))
+            data_row.append(float(line[11]))
+            data_row.append(float(line[13]))
+            data_row.append(float(line[15]))
+            data_row.append(float(line[17]))
+            data_row.append(float(line[19]))
+
+            data.append(data_row)
+
+    return data
+
+def count_numbers_in_string(string):
+    numbers_count = 0
+    for char in string:
+        if char.isdigit():
+            numbers_count += 1
+    
+    return numbers_count
+
+data = get_kenpom_data(2023, 2023)
+print(data)
