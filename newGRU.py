@@ -5,44 +5,42 @@ from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense, Masking, RNN
 from sklearn.model_selection import train_test_split
 
-# --------------------------------------------
-# Define a custom GRU Cell in TensorFlow Keras
-# --------------------------------------------
+# -------------------------------------------------------------
+# Custom GRU Cell using given equations:
+# z_t = σ(W_z [x_t, h_(t-1)])
+# r_t = σ(W_r [x_t, h_(t-1)])
+# ĥ_t = tanh(W [x_t, (r_t * h_(t-1))])
+# h_t = z_t * h_(t-1) + (1 - z_t) * ĥ_t
+# -------------------------------------------------------------
 class MyGRUCell(tf.keras.layers.Layer):
     def __init__(self, units, **kwargs):
         super(MyGRUCell, self).__init__(**kwargs)
         self.units = units
-        self.state_size = self.units  # Added this line
-        self.output_size = self.units # Optional, but good practice
+        self.state_size = self.units  # Required by Keras to know the state shape
+        self.output_size = self.units # Typically equal to state_size for GRU
 
     def build(self, input_shape):
         input_dim = input_shape[-1]
-        
+
         self.Wz = self.add_weight(shape=(input_dim + self.units, self.units),
-                                  initializer='glorot_uniform',
-                                  name='Wz')
+                                  initializer='glorot_uniform', name='Wz')
         self.bz = self.add_weight(shape=(self.units,),
-                                  initializer='zeros',
-                                  name='bz')
+                                  initializer='zeros', name='bz')
 
         self.Wr = self.add_weight(shape=(input_dim + self.units, self.units),
-                                  initializer='glorot_uniform',
-                                  name='Wr')
+                                  initializer='glorot_uniform', name='Wr')
         self.br = self.add_weight(shape=(self.units,),
-                                  initializer='zeros',
-                                  name='br')
+                                  initializer='zeros', name='br')
 
         self.Wh = self.add_weight(shape=(input_dim + self.units, self.units),
-                                  initializer='glorot_uniform',
-                                  name='Wh')
+                                  initializer='glorot_uniform', name='Wh')
         self.bh = self.add_weight(shape=(self.units,),
-                                  initializer='zeros',
-                                  name='bh')
+                                  initializer='zeros', name='bh')
 
         self.built = True
 
     def call(self, inputs, states):
-        h_prev = states[0]  # previous hidden state
+        h_prev = states[0]  # Previous hidden state
 
         # Concatenate x_t and h_(t-1)
         combined = tf.concat([inputs, h_prev], axis=1)
@@ -68,16 +66,15 @@ class MyGRUCell(tf.keras.layers.Layer):
         return config
 
 # -------------------------------------------------------------
-# Using the provided code to get and prepare data
+# Load and prepare the data
 # -------------------------------------------------------------
-# Step 1: Load the data
-# We will use all data up to 2021 as training, and predict on 2022-2023
 train_data = data_config.get_data(2003, 2021)  # Example range: adjust as needed
 test_data = data_config.get_data(2022, 2023)
 
 # The get_data output is assumed to be: [ ..., label ]
-X_train = train_data[:, :-1]  # all but last column are features
-y_train = train_data[:, -1]   # last column is label
+# Where label is the last column.
+X_train = train_data[:, :-1]
+y_train = train_data[:, -1]
 X_test = test_data[:, :-1]
 y_test = test_data[:, -1]
 
@@ -97,18 +94,18 @@ X_test_seq, y_test_seq = create_sequences(X_test, y_test, sequence_length)
 num_features = X_train_seq.shape[2]
 
 # -------------------------------------------------------------
-# Build and train the model using the custom GRU cell
+# Build the model using our custom GRU cell
 # -------------------------------------------------------------
 model = Sequential()
 model.add(Masking(mask_value=0.0, input_shape=(sequence_length, num_features)))
-# Instead of model.add(GRU(64)), we use our custom GRU cell wrapped in an RNN layer
 model.add(RNN(MyGRUCell(64), return_sequences=False))
 model.add(Dense(1, activation='sigmoid'))
 
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
+# Train the model
 model.fit(X_train_seq, y_train_seq, 
-          epochs=1000,    # Adjust epochs as needed (set to 10 for quick demo)
+          epochs=1000, 
           batch_size=32, 
           validation_split=0.1)
 
@@ -120,5 +117,4 @@ print(f"Test Loss: {loss}, Test Accuracy: {accuracy}")
 y_pred = model.predict(X_test_seq)
 y_pred_classes = (y_pred > 0.5).astype(int)
 
-print("Predictions for 2022-2023 season (class labels):")
-print(y_pred_classes)
+# Now y_pred_classes contains the predictions for the sequences from 2022-2023 season
