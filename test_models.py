@@ -30,11 +30,11 @@ def test():
     # no data before 2003 season
     train_data = data_config.get_data(2003, 2021, dataset="Regular", engineered=True)    
     # KP_train_data = data_config.get_data(2003, 2021, dataset="KenPom")
-    CB_train_data = data_config.get_data(2003, 2021, dataset="Both", engineered=True)
+    CB_train_data = data_config.get_data(2003, 2021, dataset="Both", engineered=False)
 
     test_data = data_config.get_data(2022, 2022, dataset="Regular", engineered=True)
     # KP_test_data = data_config.get_data(2022, 2022, dataset="KenPom")
-    CB_test_data = data_config.get_data(2022, 2022, dataset="Both", engineered=True)
+    CB_test_data = data_config.get_data(2022, 2022, dataset="Both", engineered=False)
 
     np.random.shuffle(train_data)
     np.random.shuffle(test_data)
@@ -70,15 +70,30 @@ def test():
     NN_5 = NN_models.longest_MLP_BN(CB_num_features)
     NN_6 = NN_models.longest_MLP_dropout(CB_num_features)
 
-    epochs = 200
+    epochs = 100
     batch_size = 32
 
-    history1 = NN_1.fit(CB_train_data_X, CB_train_data_y, epochs=epochs, batch_size=batch_size, validation_data=(CB_test_data_X, CB_test_data_y))
-    history2 = NN_2.fit(CB_train_data_X, CB_train_data_y, epochs=epochs, batch_size=batch_size, validation_data=(CB_test_data_X, CB_test_data_y))
-    history3 = NN_3.fit(CB_train_data_X, CB_train_data_y, epochs=epochs, batch_size=batch_size, validation_data=(CB_test_data_X, CB_test_data_y))
-    history4 = NN_4.fit(CB_train_data_X, CB_train_data_y, epochs=epochs, batch_size=batch_size, validation_data=(CB_test_data_X, CB_test_data_y))
-    history5 = NN_5.fit(CB_train_data_X, CB_train_data_y, epochs=epochs, batch_size=batch_size, validation_data=(CB_test_data_X, CB_test_data_y))
-    history6 = NN_6.fit(CB_train_data_X, CB_train_data_y, epochs=epochs, batch_size=batch_size, validation_data=(CB_test_data_X, CB_test_data_y))
+    checkpoint_callback_1 = tf.keras.callbacks.ModelCheckpoint(
+        filepath='model_checkpoints/m1_epoch_{epoch:02d}_val_acc_{val_accuracy:.2f}.keras',  # Save path
+        save_best_only=False,  # Set to True to save only the best model
+        save_weights_only=False,  # Save the full model, not just weights
+        monitor='val_accuracy',  # Metric to monitor
+        verbose=1  # Show logs when saving
+    )
+    checkpoint_callback_2 = tf.keras.callbacks.ModelCheckpoint(
+        filepath='model_checkpoints/m2_epoch_{epoch:02d}_val_acc_{val_accuracy:.2f}.keras',  # Save path
+        save_best_only=False,  # Set to True to save only the best model
+        save_weights_only=False,  # Save the full model, not just weights
+        monitor='val_accuracy',  # Metric to monitor
+        verbose=1  # Show logs when saving
+    )
+
+    history1 = NN_1.fit(CB_train_data_X, CB_train_data_y, epochs=epochs, batch_size=batch_size, validation_data=(CB_test_data_X, CB_test_data_y),callbacks=[checkpoint_callback_1])
+    # history2 = NN_2.fit(CB_train_data_X, CB_train_data_y, epochs=epochs, batch_size=batch_size, validation_data=(CB_test_data_X, CB_test_data_y))
+    history3 = NN_3.fit(CB_train_data_X, CB_train_data_y, epochs=epochs, batch_size=batch_size, validation_data=(CB_test_data_X, CB_test_data_y),callbacks=[checkpoint_callback_2])
+    # history4 = NN_4.fit(CB_train_data_X, CB_train_data_y, epochs=epochs, batch_size=batch_size, validation_data=(CB_test_data_X, CB_test_data_y))
+    # history5 = NN_5.fit(CB_train_data_X, CB_train_data_y, epochs=epochs, batch_size=batch_size, validation_data=(CB_test_data_X, CB_test_data_y))
+    # history6 = NN_6.fit(CB_train_data_X, CB_train_data_y, epochs=epochs, batch_size=batch_size, validation_data=(CB_test_data_X, CB_test_data_y))
     #history7 = NN_7.fit(train_data_X, train_data_y, epochs=500, batch_size=32, validation_data=(test_data_X, test_data_y))
     #history8 = NN_8.fit(tf.reshape(train_data_X, (-1, 1, 28)), train_data_y, epochs=500, batch_size=32, validation_data=(tf.reshape(test_data_X, (-1, 1, 28)), test_data_y))
 
@@ -86,12 +101,12 @@ def test():
     # CB_history = CB_NN_2.fit(CB_train_data_X, CB_train_data_y, epochs=2000, batch_size=32, validation_data=(CB_test_data_X, CB_test_data_y))
     
     accuracies1 = history1.history['val_accuracy']
-    accuracies2 = history2.history['val_accuracy']
+    # accuracies2 = history2.history['val_accuracy']
     accuracies3 = history3.history['val_accuracy']
-    accuracies4 = history4.history['val_accuracy']
-    accuracies5 = history5.history['val_accuracy']
-    accuracies6 = history6.history['val_accuracy']
-    accuracies7 = [0.72 for _ in range(200)]
+    # accuracies4 = history4.history['val_accuracy']
+    # accuracies5 = history5.history['val_accuracy']
+    # accuracies6 = history6.history['val_accuracy']
+    # accuracies7 = [0.72 for _ in range(200)]
     #accuracies8 = history8.history['val_accuracy']
 
     # KP_accuracies = KP_history.history['val_accuracy']
@@ -103,11 +118,11 @@ def test():
     
 
     print(f"Test Accuracy Model 1: {max(accuracies1):.2f}, at Epoch {np.argmax(accuracies1)}")
-    print(f"Test Accuracy Model 2: {max(accuracies2):.2f}, at Epoch {np.argmax(accuracies2)}")
+    # print(f"Test Accuracy Model 2: {max(accuracies2):.2f}, at Epoch {np.argmax(accuracies2)}")
     print(f"Test Accuracy Model 3: {max(accuracies3):.2f}, at Epoch {np.argmax(accuracies3)}")
-    print(f"Test Accuracy Model 4: {max(accuracies4):.2f}, at Epoch {np.argmax(accuracies4)}")
-    print(f"Test Accuracy Model 5: {max(accuracies5):.2f}, at Epoch {np.argmax(accuracies5)}")
-    print(f"Test Accuracy Model 6: {max(accuracies6):.2f}, at Epoch {np.argmax(accuracies6)}")
+    # print(f"Test Accuracy Model 4: {max(accuracies4):.2f}, at Epoch {np.argmax(accuracies4)}")
+    # print(f"Test Accuracy Model 5: {max(accuracies5):.2f}, at Epoch {np.argmax(accuracies5)}")
+    # print(f"Test Accuracy Model 6: {max(accuracies6):.2f}, at Epoch {np.argmax(accuracies6)}")
     #print(f"Test Accuracy Model 7: {max(accuracies7):.2f}, at Epoch {np.argmax(accuracies7)}")
     #print(f"Test Accuracy Model 8: {max(accuracies8):.2f}, at Epoch {np.argmax(accuracies8)}")
 
@@ -115,14 +130,14 @@ def test():
     # print(f"CB Test Accuracy: {max(CB_accuracies):.2f}, at Epoch {np.argmax(CB_accuracies)}")
 
     # Plot validation accuracy
-    epochs = range(1, len(accuracies1) + 1, 5)  # Epoch numbers
+    epochs = range(1, len(accuracies3) + 1, 5)  # Epoch numbers
     plt.plot(epochs, accuracies1[0::5], 'b-', label='MLP 1')
-    plt.plot(epochs, accuracies2[0::5], 'g-', label='MLP 2')
+    # plt.plot(epochs, accuracies2[0::5], 'g-', label='MLP 2')
     plt.plot(epochs, accuracies3[0::5], 'r-', label='MLP 3')
-    plt.plot(epochs, accuracies4[0::5], 'c-', label='GRU')
-    plt.plot(epochs, accuracies5[0::5], 'm-', label='MLP w/ BN')
-    plt.plot(epochs, accuracies6[0::5], 'k-', label='MLP w/ Dropout')
-    plt.plot(epochs, accuracies7[0::5], 'y-', label='Baseline')
+    # plt.plot(epochs, accuracies4[0::5], 'c-', label='GRU')
+    # plt.plot(epochs, accuracies5[0::5], 'm-', label='MLP w/ BN')
+    # plt.plot(epochs, accuracies6[0::5], 'k-', label='MLP w/ Dropout')
+    # plt.plot(epochs, accuracies7[0::5], 'y-', label='Baseline')
     #plt.plot(epochs, accuracies8[0::10], 'w-', label='M8')
 
     # plt.plot(epochs, KP_accuracies[9::10], 'g-', label='KenPom')

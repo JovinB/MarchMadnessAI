@@ -360,12 +360,12 @@ def get_kenpom_data(start_year, end_year):
                 data_row.append(float(line[4]))
                 data_row.append(float(line[5]))
                 data_row.append(float(line[7]))
-                # data_row.append(float(line[9]))
-                # data_row.append(float(line[11]))
+                data_row.append(float(line[9]))
+                data_row.append(float(line[11]))
                 data_row.append(float(line[13]))
-                # data_row.append(float(line[15]))
-                # data_row.append(float(line[17]))
-                # data_row.append(float(line[19]))
+                data_row.append(float(line[15]))
+                data_row.append(float(line[17]))
+                data_row.append(float(line[19]))
 
                 kenpom_data.append(data_row)
     
@@ -376,25 +376,18 @@ def get_kenpom_data(start_year, end_year):
     max_col4 = np.max(kenpom_data[:, 3])
     max_col5 = np.max(kenpom_data[:, 4])
     max_col6 = np.max(kenpom_data[:, 5])
-    # max_col7 = np.max(kenpom_data[:, 6])
-    # max_col8 = np.max(kenpom_data[:, 7])
-    max_col9 = np.max(kenpom_data[:, 6])
-    # max_col10 = np.max(kenpom_data[:, 9])
-    # max_col11 = np.max(kenpom_data[:, 10])
-    # max_col12 = np.max(kenpom_data[:, 11])
+    max_col7 = np.max(kenpom_data[:, 6])
+    max_col8 = np.max(kenpom_data[:, 7])
+    max_col9 = np.max(kenpom_data[:, 8])
+    max_col10 = np.max(kenpom_data[:, 9])
+    max_col11 = np.max(kenpom_data[:, 10])
+    max_col12 = np.max(kenpom_data[:, 11])
 
-    '''
     for i in range(len(kenpom_data)):
         kenpom_data[i] = [kenpom_data[i][0],kenpom_data[i][1],kenpom_data[i][2]/max_col3,
                             kenpom_data[i][3]/max_col4,kenpom_data[i][4]/max_col5,kenpom_data[i][5]/max_col6,
                             kenpom_data[i][6]/max_col7,kenpom_data[i][7]/max_col8,kenpom_data[i][8]/max_col9,
                             kenpom_data[i][9]/max_col10,kenpom_data[i][10]/max_col11,kenpom_data[i][11]/max_col12]
-    '''
-
-    for i in range(len(kenpom_data)):
-        kenpom_data[i] = [kenpom_data[i][0],kenpom_data[i][1],kenpom_data[i][2]/max_col3,
-                            kenpom_data[i][3]/max_col4,kenpom_data[i][4]/max_col5,kenpom_data[i][5]/max_col6,
-                            kenpom_data[i][6]/max_col9]
 
     return kenpom_data
 
