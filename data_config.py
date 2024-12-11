@@ -277,6 +277,9 @@ def get_data(start_year, end_year, dataset="Regular"): # dataset can also be 'Ke
     years = []
     year = start_year
     while not year == end_year + 1:
+        if year == 2008 or year == 2020: # kenpom is having trouble with 2008, and 2020 there is no data
+            year += 1
+            continue
         years.append(year)
         year += 1
 
@@ -291,6 +294,7 @@ def get_data(start_year, end_year, dataset="Regular"): # dataset can also be 'Ke
     data = []
 
     for game in tourney_data_subset.iterrows():
+        game_data = None
         game = game[1] # iterrows() returns a (index, Series) pair where the 'Series' contains the data
 
         w_seed = seed_data_subset.loc[(seed_data_subset['TeamID'] == game['WTeamID']) & (seed_data_subset['Season'] == game['Season'])]['Seed'].values[0]
@@ -313,10 +317,21 @@ def get_data(start_year, end_year, dataset="Regular"): # dataset can also be 'Ke
             l_team_data = get_team_data(reg_season_data_subset, game['LTeamID'], game['Season']) + get_kenpom_team_data(TEAM_DIRECTORY, kenpom_data_subset, game['LTeamID'], game['Season'])
 
         if random.random() < 0.5: # randomly choose to order the data as winner, loser, 1 (label) or loser, winner, 0 (label)
-            game_data = [int(w_seed)] + w_team_data + [int(l_seed)] + l_team_data + [1]
+            try:
+                game_data = [int(w_seed)] + w_team_data + [int(l_seed)] + l_team_data + [1]
+            except:
+                print(f"{game['Season']}, {game['WTeamID']}, {game['LTeamID']}")
+                print(f"Game data: {game_data}")
         else:
-            game_data = [int(l_seed)] + l_team_data + [int(w_seed)] + w_team_data + [0]
+            try:
+                game_data = [int(l_seed)] + l_team_data + [int(w_seed)] + w_team_data + [0]
+            except:
+                print(f"{game['Season']}, {game['WTeamID']}, {game['LTeamID']}")
+                print(f"Game data: {game_data}")
 
-        data.append(game_data)
+        if game_data != None:
+            data.append(game_data)
+        else:
+            print('Skipped appending')
     
     return np.array(data)
