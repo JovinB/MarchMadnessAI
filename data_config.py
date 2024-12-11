@@ -125,7 +125,7 @@ def establish_team_directory():
     team_data = pd.read_csv("data/MTeams.csv")
     for row in team_data.iterrows():
         row = row[1] # iterrows() returns a (index, Series) pair where the 'Series' contains the data
-        team_directory[row['TeamID']] = row['TeamName']
+        team_directory[row['TeamName']] = row['TeamID']
 
     return team_directory
 
@@ -153,12 +153,91 @@ def get_team_data(data, teamID, season):
             return team[2:]
     return None
 
-def get_kenpom_team_data(team_directory, data, teamID, season):
+def get_kenpom_team_data(data, teamID, season):
     for row in data:
-        if row[0] == team_directory[teamID] and row[1] == season:
+        if row[0] == teamID and row[1] == season:
             return row[2:]
 
     return None
+
+def get_engineered_averaged_reg_season_data(data):
+    averaged_data = []
+    teams = []
+
+    # data: WFGM,WFGA,WFGM3,WFGA3,WFTM,WFTA,WOR,WDR,WAst,WTO,WStl,WBlk,WPF (again for the losing team, but with prefix 'L' instead of 'W')
+
+    for game in data.iterrows():
+        game = game[1] # iterrows() returns a (index, Series) pair where the 'Series' contains the data
+        team_1_ID = game['WTeamID']
+        team_2_ID = game['LTeamID']
+        season = game['Season']
+
+        if (team_1_ID, season) not in teams:
+            teams.append((team_1_ID, season))
+
+            averaged_data.append([1,team_1_ID,season,int(game['WFGM']),int(game['WFGA']),int(game['WFGM3']),int(game['WFGA3']),
+                                  int(game['WFTM']),int(game['WFTA']),int(game['WOR']),int(game['WDR']),int(game['WAst']),
+                                  int(game['WTO']),int(game['WStl']),int(game['WBlk']),int(game['WPF'])])
+        else:
+            for i, team in enumerate(teams):
+                if team[0] == team_1_ID and team[1] == season:
+                    averaged_data[i] = [averaged_data[i][0]+1,averaged_data[i][1],averaged_data[i][2],
+                                        averaged_data[i][3]+int(game['WFGM']),averaged_data[i][4]+int(game['WFGA']),
+                                        averaged_data[i][5]+int(game['WFGM3']),averaged_data[i][6]+int(game['WFGA3']),
+                                        averaged_data[i][7]+int(game['WFTM']),averaged_data[i][8]+int(game['WFTA']),
+                                        averaged_data[i][9]+int(game['WOR']),averaged_data[i][10]+int(game['WDR']),
+                                        averaged_data[i][11]+int(game['WAst']),averaged_data[i][12]+int(game['WTO']),
+                                        averaged_data[i][13]+int(game['WStl']),averaged_data[i][14]+int(game['WBlk']),
+                                        averaged_data[i][15]+int(game['WPF'])]
+                    break
+        
+        if (team_2_ID, season) not in teams:
+            teams.append((team_2_ID, season))
+
+            averaged_data.append([1,team_2_ID,season,int(game['LFGM']),int(game['LFGA']),int(game['LFGM3']),int(game['LFGA3']),
+                                  int(game['LFTM']),int(game['LFTA']),int(game['LOR']),int(game['LDR']),int(game['LAst']),
+                                  int(game['LTO']),int(game['LStl']),int(game['LBlk']),int(game['LPF'])])
+        else:
+            for i, team in enumerate(teams):
+                if team[0] == team_2_ID and team[1] == season:
+                    averaged_data[i] = [averaged_data[i][0]+1,averaged_data[i][1],averaged_data[i][2],
+                                        averaged_data[i][3]+int(game['LFGM']),averaged_data[i][4]+int(game['LFGA']),
+                                        averaged_data[i][5]+int(game['LFGM3']),averaged_data[i][6]+int(game['LFGA3']),
+                                        averaged_data[i][7]+int(game['LFTM']),averaged_data[i][8]+int(game['LFTA']),
+                                        averaged_data[i][9]+int(game['LOR']),averaged_data[i][10]+int(game['LDR']),
+                                        averaged_data[i][11]+int(game['LAst']),averaged_data[i][12]+int(game['LTO']),
+                                        averaged_data[i][13]+int(game['LStl']),averaged_data[i][14]+int(game['LBlk']),
+                                        averaged_data[i][15]+int(game['LPF'])]
+                    break
+
+    # data: FGM,FGA,FGM3,FGA3,FTM,FTA,OR,DR,Ast,TO,Stl,Blk,PF
+
+    for i in range(len(averaged_data)):
+        total_games = averaged_data[i][0]
+        fg_percent = averaged_data[i][3] / averaged_data[i][4]
+        fg3_percent = averaged_data[i][5] / averaged_data[i][6]
+        ft_percent = averaged_data[i][7] / averaged_data[i][8]
+        total_rebounds = (averaged_data[i][9] + averaged_data[i][10]) / total_games
+        assist_turnover = averaged_data[i][11] / averaged_data[i][12]
+
+        averaged_data[i] = [averaged_data[i][1],averaged_data[i][2],fg_percent,fg3_percent,ft_percent,
+                            total_rebounds, assist_turnover]
+        
+    averaged_data = np.array(averaged_data)
+
+    # normalize the data
+    max_col3 = np.max(averaged_data[:, 2])
+    max_col4 = np.max(averaged_data[:, 3])
+    max_col5 = np.max(averaged_data[:, 4])
+    max_col6 = np.max(averaged_data[:, 5])
+    max_col7 = np.max(averaged_data[:, 6])
+
+    for i in range(len(averaged_data)):
+        averaged_data[i] = [averaged_data[i][0],averaged_data[i][1],averaged_data[i][2]/max_col3,
+                            averaged_data[i][3]/max_col4,averaged_data[i][4]/max_col5,averaged_data[i][5]/max_col6,
+                            averaged_data[i][6]/max_col7]
+
+    return averaged_data
 
 def get_averaged_reg_season_data(data):
     averaged_data = []
@@ -212,17 +291,41 @@ def get_averaged_reg_season_data(data):
 
     for i in range(len(averaged_data)):
         total_games = averaged_data[i][0]
-        total_games = 1  # for testing purposes -- gives totals instead of averages
         averaged_data[i] = [averaged_data[i][1],averaged_data[i][2],averaged_data[i][3]/total_games,
                             averaged_data[i][4]/total_games,averaged_data[i][5]/total_games,averaged_data[i][6]/total_games,
                             averaged_data[i][7]/total_games,averaged_data[i][8]/total_games,averaged_data[i][9]/total_games,
                             averaged_data[i][10]/total_games,averaged_data[i][11]/total_games,averaged_data[i][12]/total_games,
                             averaged_data[i][13]/total_games,averaged_data[i][14]/total_games,averaged_data[i][15]/total_games]
 
+    averaged_data = np.array(averaged_data)
+    
+    # normalize the data
+    max_col3 = np.max(averaged_data[:, 2])
+    max_col4 = np.max(averaged_data[:, 3])
+    max_col5 = np.max(averaged_data[:, 4])
+    max_col6 = np.max(averaged_data[:, 5])
+    max_col7 = np.max(averaged_data[:, 6])
+    max_col8 = np.max(averaged_data[:, 7])
+    max_col9 = np.max(averaged_data[:, 8])
+    max_col10 = np.max(averaged_data[:, 9])
+    max_col11 = np.max(averaged_data[:, 10])
+    max_col12 = np.max(averaged_data[:, 11])
+    max_col13 = np.max(averaged_data[:, 12])
+    max_col14 = np.max(averaged_data[:, 13])
+    max_col15 = np.max(averaged_data[:, 14])
+
+    for i in range(len(averaged_data)):
+        averaged_data[i] = [averaged_data[i][0],averaged_data[i][1],averaged_data[i][2]/max_col3,
+                            averaged_data[i][3]/max_col4,averaged_data[i][4]/max_col5,averaged_data[i][5]/max_col6,
+                            averaged_data[i][6]/max_col7,averaged_data[i][7]/max_col8,averaged_data[i][8]/max_col9,
+                            averaged_data[i][9]/max_col10,averaged_data[i][10]/max_col11,averaged_data[i][11]/max_col12,
+                            averaged_data[i][12]/max_col13,averaged_data[i][13]/max_col14,averaged_data[i][14]/max_col15]
+    
     return averaged_data
 
 
 def get_kenpom_data(start_year, end_year):
+    TEAM_DIRECTORY = establish_team_directory()
     years = []
     year = start_year
     while not year == end_year + 1:
@@ -245,31 +348,58 @@ def get_kenpom_data(start_year, end_year):
             # if the team is not seeded, skip its line of data
             if seed_num_length > 0:
                 wins, losses = line[3].split("-")
-                win_loss_ratio = int(wins) / int(losses)
+                win_loss_ratio = float(wins) / float(losses)
 
-                # only include desired data
+                # Starting @ line[4]: Efficiency margin, O-efficiency, D-efficiency, Tempo, Luck, 
+                # Strength of Schedule, OE of opponents, DE of opponents, Non-conference strength of schedule
                 data_row = []
                 team_name = convert_team_name_format(line[1][:-(1+seed_num_length)])
-                data_row.append(team_name)
+                data_row.append(TEAM_DIRECTORY[team_name])
                 data_row.append(year)
                 data_row.append(win_loss_ratio) # engineered feature
                 data_row.append(float(line[4]))
                 data_row.append(float(line[5]))
                 data_row.append(float(line[7]))
-                data_row.append(float(line[9]))
-                data_row.append(float(line[11]))
+                # data_row.append(float(line[9]))
+                # data_row.append(float(line[11]))
                 data_row.append(float(line[13]))
-                data_row.append(float(line[15]))
-                data_row.append(float(line[17]))
-                data_row.append(float(line[19]))
+                # data_row.append(float(line[15]))
+                # data_row.append(float(line[17]))
+                # data_row.append(float(line[19]))
 
                 kenpom_data.append(data_row)
     
+    kenpom_data = np.array(kenpom_data)
+
+    # normalize the data
+    max_col3 = np.max(kenpom_data[:, 2])
+    max_col4 = np.max(kenpom_data[:, 3])
+    max_col5 = np.max(kenpom_data[:, 4])
+    max_col6 = np.max(kenpom_data[:, 5])
+    # max_col7 = np.max(kenpom_data[:, 6])
+    # max_col8 = np.max(kenpom_data[:, 7])
+    max_col9 = np.max(kenpom_data[:, 6])
+    # max_col10 = np.max(kenpom_data[:, 9])
+    # max_col11 = np.max(kenpom_data[:, 10])
+    # max_col12 = np.max(kenpom_data[:, 11])
+
+    '''
+    for i in range(len(kenpom_data)):
+        kenpom_data[i] = [kenpom_data[i][0],kenpom_data[i][1],kenpom_data[i][2]/max_col3,
+                            kenpom_data[i][3]/max_col4,kenpom_data[i][4]/max_col5,kenpom_data[i][5]/max_col6,
+                            kenpom_data[i][6]/max_col7,kenpom_data[i][7]/max_col8,kenpom_data[i][8]/max_col9,
+                            kenpom_data[i][9]/max_col10,kenpom_data[i][10]/max_col11,kenpom_data[i][11]/max_col12]
+    '''
+
+    for i in range(len(kenpom_data)):
+        kenpom_data[i] = [kenpom_data[i][0],kenpom_data[i][1],kenpom_data[i][2]/max_col3,
+                            kenpom_data[i][3]/max_col4,kenpom_data[i][4]/max_col5,kenpom_data[i][5]/max_col6,
+                            kenpom_data[i][6]/max_col9]
+
     return kenpom_data
 
 
-def get_data(start_year, end_year, dataset="Regular"): # dataset can also be 'KenPom' or 'Both'
-    TEAM_DIRECTORY = establish_team_directory()
+def get_data(start_year, end_year, dataset="Regular", engineered=False): # dataset can also be 'KenPom' or 'Both'
     reg_season_data = pd.read_csv("data/MRegularSeasonDetailedResults.csv")
     seed_data = pd.read_csv("data/MNCAATourneySeeds.csv")
     tourney_result_data = pd.read_csv("data/MNCAATourneyCompactResults.csv")
@@ -287,14 +417,17 @@ def get_data(start_year, end_year, dataset="Regular"): # dataset can also be 'Ke
     tourney_data_subset = tourney_result_data.loc[tourney_result_data['Season'].isin(years)]
 
     if dataset != "KenPom":
-        reg_season_data_subset = get_averaged_reg_season_data(reg_season_data.loc[reg_season_data['Season'].isin(years)])
+        if engineered:
+            reg_season_data_subset = get_engineered_averaged_reg_season_data(reg_season_data.loc[reg_season_data['Season'].isin(years)])
+        else:
+            reg_season_data_subset = get_averaged_reg_season_data(reg_season_data.loc[reg_season_data['Season'].isin(years)])
     if dataset == "KenPom" or dataset == "Both":
         kenpom_data_subset = get_kenpom_data(start_year, end_year)
 
     data = []
 
     for game in tourney_data_subset.iterrows():
-        game_data = None
+        game_data = [None]
         game = game[1] # iterrows() returns a (index, Series) pair where the 'Series' contains the data
 
         w_seed = seed_data_subset.loc[(seed_data_subset['TeamID'] == game['WTeamID']) & (seed_data_subset['Season'] == game['Season'])]['Seed'].values[0]
@@ -309,29 +442,38 @@ def get_data(start_year, end_year, dataset="Regular"): # dataset can also be 'Ke
             l_team_data = get_team_data(reg_season_data_subset, game['LTeamID'], game['Season'])
 
         elif dataset == "KenPom":
-            w_team_data = get_kenpom_team_data(TEAM_DIRECTORY, kenpom_data_subset, game['WTeamID'], game['Season'])
-            l_team_data = get_kenpom_team_data(TEAM_DIRECTORY, kenpom_data_subset, game['LTeamID'], game['Season'])
+            w_team_data = get_kenpom_team_data(kenpom_data_subset, game['WTeamID'], game['Season'])
+            l_team_data = get_kenpom_team_data(kenpom_data_subset, game['LTeamID'], game['Season'])
 
         elif dataset == "Both":
-            w_team_data = get_team_data(reg_season_data_subset, game['WTeamID'], game['Season']) + get_kenpom_team_data(TEAM_DIRECTORY, kenpom_data_subset, game['WTeamID'], game['Season'])
-            l_team_data = get_team_data(reg_season_data_subset, game['LTeamID'], game['Season']) + get_kenpom_team_data(TEAM_DIRECTORY, kenpom_data_subset, game['LTeamID'], game['Season'])
+            try:
+                w_team_data = np.concatenate((get_team_data(reg_season_data_subset, game['WTeamID'], game['Season']), get_kenpom_team_data(kenpom_data_subset, game['WTeamID'], game['Season'])), axis=0)
+                l_team_data = np.concatenate((get_team_data(reg_season_data_subset, game['LTeamID'], game['Season']), get_kenpom_team_data(kenpom_data_subset, game['LTeamID'], game['Season'])), axis=0)
+                # w_team_data = get_team_data(reg_season_data_subset, game['WTeamID'], game['Season']) + get_kenpom_team_data(TEAM_DIRECTORY, kenpom_data_subset, game['WTeamID'], game['Season'])
+                # l_team_data = get_team_data(reg_season_data_subset, game['LTeamID'], game['Season']) + get_kenpom_team_data(TEAM_DIRECTORY, kenpom_data_subset, game['LTeamID'], game['Season'])
+            except:
+                print(f"{game['Season']}, {game['WTeamID']}, {game['LTeamID']}")
 
         if random.random() < 0.5: # randomly choose to order the data as winner, loser, 1 (label) or loser, winner, 0 (label)
             try:
-                game_data = [int(w_seed)] + w_team_data + [int(l_seed)] + l_team_data + [1]
+                game_data = np.concatenate(([int(w_seed)], w_team_data, [int(l_seed)], l_team_data, [1]), axis=0)
+                # game_data = [int(w_seed)] + w_team_data + [int(l_seed)] + l_team_data + [1]
             except:
                 print(f"{game['Season']}, {game['WTeamID']}, {game['LTeamID']}")
-                print(f"Game data: {game_data}")
         else:
             try:
-                game_data = [int(l_seed)] + l_team_data + [int(w_seed)] + w_team_data + [0]
+                game_data = np.concatenate(([int(l_seed)], l_team_data, [int(w_seed)], w_team_data, [0]), axis=0)
+                # game_data = [int(l_seed)] + l_team_data + [int(w_seed)] + w_team_data + [0]
             except:
                 print(f"{game['Season']}, {game['WTeamID']}, {game['LTeamID']}")
-                print(f"Game data: {game_data}")
 
-        if game_data != None:
-            data.append(game_data)
-        else:
+        if any(ele is None for ele in game_data):
             print('Skipped appending')
-    
+        else:
+            data.append(game_data)
+
     return np.array(data)
+
+# TODO: FINAL TEST 
+# a combination of all relevant features from kenpom and from the regular dataset, for all models
+# (the 6 models from the beginning) and the baseline model
